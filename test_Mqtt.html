@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>-->
+        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+        <link rel = "stylesheet" href="test_Mqtt.css">
+        
+        <script>
+            document.addEventListener('DOMContentLoaded', (evt)=>{
+                const chatInput = document.getElementById('chat-input');
+                chatInput.value = "";
+                chatInput.addEventListener('keydown',(evt)=>{
+                    if(evt.key === "Enter"){
+                        console.log("Enter pressed");
+                        sendMsg();
+                    }
+                });
+            });
+        </script>
+         <script>
+            function getRandClientID(){
+                return 'client_' + Math.random().toString(16).substr(2, 8);
+            }
+            function setLabelStatus(msg){
+                const labelStatus = document.getElementById('status');
+                labelStatus.textContent = msg;
+            }
+            function sendMsg(){
+                console.log("[+] publishing msg.....");
+                
+                const chatInputEl = document.getElementById('chat-input');
+                const msg = chatInputEl.value;
+                if(!msg){
+                    console.log("[-] Msg is empty");
+                    return;
+                }
+                const data = JSON.stringify({
+                    msg : msg,
+                    userID : clientID
+                });
+                client.publish(topic,data, { qos: 0, retain: false });
+                chatInputEl.value = '';
+            }
+            function connect(){
+                if(client.connected){return;}
+                client
+            }
+
+        </script>
+
+    
+        <script>
+            let clientID = getRandClientID();
+            console.log(clientID);
+            const topic = "mqtt_con_test";
+            const port = 8084
+            const broker = 'wss://broker.emqx.io:8084/mqtt'; // free borker 
+            //const host = 'mqtt://localhost';
+            const options = {
+                keepalive: 60,
+                clientId: clientID,
+                reconnectPeriod: 2* 1000,
+                connectTimeout: 5 * 1000,
+                protocolId: 'MQTT',
+                protocolVersion: 4,
+                clean: true,
+                useSSL: true,
+            }
+
+            const client = mqtt.connect(broker,options);
+            client.on('connect',()=>{
+                console.log("[+] connected to broker");
+                setLabelStatus("Connected!!");
+                client.subscribe(topic, (err)=>{
+                    if(!err){
+                        data = JSON.stringify({
+                            msg : "님이 입장하였다!!",
+                            userID : clientID
+                        });
+
+                        client.publish(topic, data, { qos: 0, retain: false });
+                        console.log("[+] Subscribed Topic: ",topic);
+                    }
+                });
+            });
+            client.on("message", (topic,payload)=>{
+                console.log("[+] mes received!!");
+                const data = JSON.parse(payload.toString());
+                const msgToDisply = data.userID + ":    "+ data.msg;
+                
+                const chatMessages = document.getElementById('chat-messages');
+                const msgEl = document.createElement("div");
+                msgEl.textContent = msgToDisply;
+                chatMessages.appendChild(msgEl);
+            });
+            client.on('offine',()=>{
+                console.log("[-] Connection lost");
+                setLabelStatus("Disconnected. 2초 후 재연결 시도");
+            });
+            client.on("reconnect",()=>{
+                setLabelStatus("연결 시도ing....");
+            })
+
+            client.on('error',(err)=>{
+                setLabelStatus("Connection Error");
+                console.error("Connection Error");
+                client.end();
+            });
+            client.on('close',()=>{
+                setLabelStatus("Connection expired (60 sec)");
+            });
+
+        </script>
+    </head>
+    <body>
+
+    <div class = "container">
+        <div class="chat-container">
+            <div id="chat-messages"></div>
+            <div>
+            <input type="text" id="chat-input" placeholder="Type a message...">
+            <button onclick = "sendMsg()">Send</button>
+            </div>
+            
+        </div>
+        
+    </div>
+    <div>
+        상태 : <label id = "status">Waiting... </label>
+        <button id="connect" onclick = "connect()">Connect</button>
+    </div>
+
+
+    </body>
+</html>

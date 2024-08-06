@@ -1,0 +1,25 @@
+.container {
+    display: flex;
+    justify-content: space-between;
+    width: 100wh;
+    height: 80vh;
+    margin: 0 auto;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 80;
+}
+#chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+#chat-input {
+    width: 95%;
+    padding: 5px;
+}
